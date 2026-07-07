@@ -1,0 +1,74 @@
+[
+  {
+    "id": 6,
+    "filename": "2023-02-05 - 2023-02-11-美国.xlsx",
+    "type": "智能",
+    "total": 53212,
+    "success": 53211,
+    "failed": 1,
+    "failed_details": [
+      "第26576行: 关键词为空(nan)"
+    ],
+    "status": "部分完成",
+    "time": "2026/06/27 16:47:30"
+  },
+  {
+    "id": 5,
+    "filename": "2023-01-29 - 2023-02-04-美国.xlsx",
+    "type": "智能",
+    "total": 52891,
+    "success": 52891,
+    "failed": 0,
+    "failed_details": [],
+    "status": "完成",
+    "time": "2026/06/27 16:47:16"
+  },
+  {
+    "id": 4,
+    "filename": "2023-01-22 - 2023-01-28-美国.xlsx",
+    "type": "智能",
+    "total": 50472,
+    "success": 50472,
+    "failed": 0,
+    "failed_details": [],
+    "status": "完成",
+    "time": "2026/06/27 16:46:51"
+  },
+  {
+    "id": 3,
+    "filename": "2023-01-15-2023-01-21-美国.xlsx",
+    "type": "智能",
+    "total": 49029,
+    "success": 49028,
+    "failed": 1,
+    "failed_details": [
+      "第23832行: 关键词为空(nan)"
+    ],
+    "status": "部分完成",
+    "time": "2026/06/27 16:46:43"
+  },
+  {
+    "id": 2,
+    "filename": "2023-01-01-2023-01-07-美国.xlsx",
+    "type": "智能",
+    "total": 45736,
+    "success": 45736,
+    "failed": 0,
+    "failed_details": [],
+    "status": "完成",
+    "time": "2026/06/27 16:43:56"
+  },
+  {
+    "id": 1,
+    "filename": "2023-01-08-2023-01-14-美国.xlsx",
+    "type": "智能",
+    "total": 48592,
+    "success": 48591,
+    "failed": 1,
+    "failed_details": [
+      "第39088行: 关键词为空(nan)"
+    ],
+    "status": "部分完成",
+    "time": "2026/06/27 16:43:10"
+  }
+]
