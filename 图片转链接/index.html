@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转链接</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            background: #1e3a5f;
+            color: #fff;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #1a3354;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 12px 0;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .menu-item.active {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-left-color: #60a5fa;
+        }
+
+        .menu-icon {
+            font-size: 16px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 24px 30px;
+            overflow: hidden;
+        }
+
+        .page-header {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card.blue { background: #dbeafe; }
+        .stat-card.red { background: #fee2e2; }
+        .stat-card.orange { background: #fed7aa; }
+        .stat-card.pink { background: #fce7f3; }
+        .stat-card.green { background: #d1fae5; }
+        .stat-card.purple { background: #ede9fe; }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #d0d7de;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #2563eb;
+            background: #dbeafe;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #57606a;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 24px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #1d4ed8;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-list {
+            margin-bottom: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f6f8fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .file-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 12px;
+        }
+
+        .file-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 2px;
+        }
+
+        .file-remove {
+            color: #ef4444;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 14px;
+            border: none;
+            background: none;
+        }
+
+        .submit-area {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .submit-btn {
+            padding: 12px 40px;
+            background: #22c55e;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #16a34a;
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .copy-all-btn {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .copy-all-btn:hover {
+            background: #2563eb;
+        }
+
+        .clear-btn-small {
+            padding: 4px 12px;
+            background: #fff;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .clear-btn-small:hover {
+            background: #f3f4f6;
+            color: #374151;
+            border-color: #9ca3af;
+        }
+
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .refresh-btn:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            gap: 16px;
+        }
+
+        .result-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-filename {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .result-url {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-url input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #555;
+            background: #fff;
+            outline: none;
+        }
+
+        .result-url input:focus {
+            border-color: #3b82f6;
+        }
+
+        .copy-btn {
+            padding: 8px 14px;
+            background: #10b981;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: #059669;
+        }
+
+        .copy-btn.copied {
+            background: #6b7280;
+        }
+
+        .result-error {
+            color: #ef4444;
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: #333;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .records-table th,
+        .records-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        .records-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .records-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .record-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .record-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .record-status.success {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .record-status.failed {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .delete-btn {
+            padding: 4px 10px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #fecaca;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .pagination-btn {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sidebar.collapsed {
+            width: 50px;
+        }
+
+        .sidebar.collapsed .menu-text,
+        .sidebar.collapsed .sidebar-title {
+            display: none;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* Excel 链接填写页面样式 */
+        .excel-page {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+            min-height: calc(100vh - 48px);
+            margin: -24px -30px;
+            padding: 24px 30px;
+            color: #fff;
+        }
+
+        .excel-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .excel-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .excel-header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .excel-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        .excel-grid > div {
+            min-width: 0;
+        }
+
+        .excel-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .excel-card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .excel-card-title .icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .excel-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .excel-upload-area:hover, .excel-upload-area.dragover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .excel-upload-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 12px;
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .excel-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .excel-input::placeholder {
+            color: #64748b;
+        }
+
+        .excel-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .excel-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .excel-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            transition: all 0.3s;
+        }
+
+        .excel-textarea::placeholder {
+            color: #64748b;
+        }
+
+        .excel-textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .excel-textarea:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .excel-btn-primary {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .excel-btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
+        }
+
+        .excel-btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .excel-btn-success {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .excel-btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
+        }
+
+        .excel-btn-success:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .excel-btn-danger {
+            padding: 6px 12px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .excel-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .excel-link-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #93c5fd;
+        }
+
+        .excel-match-highlight {
+            background: rgba(16, 185, 129, 0.15);
+            border-left: 3px solid #10b981;
+            border-radius: 8px;
+            padding: 12px;
+            word-break: break-all;
+            overflow-wrap: break-word;
+        }
+
+        .excel-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .excel-suggestions.show {
+            display: block;
+        }
+
+        .excel-suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .excel-suggestion-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .excel-preview-table {
+            width: auto;
+            min-width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            table-layout: auto;
+        }
+
+        .excel-preview-table th {
+            background: rgba(59, 130, 246, 0.25);
+            color: #60a5fa;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: 500;
+            border-bottom: 2px solid rgba(59, 130, 246, 0.4);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            white-space: nowrap;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .excel-preview-table th.col-letter {
+            text-align: center;
+            color: #60a5fa;
+            font-weight: 600;
+            font-size: 11px;
+            padding: 6px 8px;
+            border-bottom: 2px solid rgba(59, 130, 246, 0.4);
+            top: 0;
+            width: 40px;
+            min-width: 40px;
+            max-width: 40px;
+        }
+
+        .excel-preview-table td {
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+            white-space: nowrap;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .excel-preview-table .row-number {
+            width: 30px;
+            min-width: 30px;
+            text-align: center;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.03);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            position: sticky;
+            left: 0;
+            z-index: 2;
+        }
+
+        .excel-preview-table th.row-number {
+            z-index: 3;
+        }
+
+        .excel-preview-table tr.matched {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .excel-preview-table td.modified {
+            color: #4ade80;
+            font-weight: 500;
+        }
+
+        .excel-preview-container {
+            height: 225px;
+            width: 100%;
+            overflow: auto;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: block;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            min-width: 0;
+        }
+
+        .excel-preview-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .excel-preview-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .excel-preview-container::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+
+        .excel-preview-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.8);
+        }
+
+        .excel-log {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+        }
+
+        .excel-log-item {
+            padding: 4px 0;
+            color: #94a3b8;
+        }
+
+        .excel-log-item.success {
+            color: #4ade80;
+        }
+
+        .excel-log-time {
+            color: #64748b;
+            margin-right: 8px;
+        }
+
+        .excel-file-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(16, 185, 129, 0.15);
+            border-radius: 8px;
+            color: #4ade80;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">图片转链接工具</div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">«</button>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-item active" onclick="switchPage('upload')">
+                    <span class="menu-icon">📤</span>
+                    <span class="menu-text">图片上传</span>
+                </div>
+                <div class="menu-item" onclick="switchPage('records')">
+                    <span class="menu-icon">📋</span>
+                    <span class="menu-text">上传记录</span>
+                </div>
+                <div class="menu-item" onclick="switchPage('excel')">
+                    <span class="menu-icon">📊</span>
+                    <span class="menu-text">excel链接填写</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <div class="tab-content active" id="uploadPage">
+                <div class="page-header">图片上传</div>
+
+                <div class="card">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">点击或拖拽图片到此处上传</div>
+                        <div class="upload-hint">支持 JPG、PNG、GIF 等格式，可选择单张或多张图片</div>
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">选择图片</button>
+                    </div>
+
+                    <input type="file" id="fileInput" accept="image/*" multiple>
+
+                    <div class="file-list" id="fileList"></div>
+
+                    <div class="submit-area">
+                        <button class="submit-btn" id="submitBtn" onclick="uploadImages()" disabled>
+                            开始上传
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" id="resultsCard" style="display: none;">
+                    <div class="card-title">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span>上传结果</span>
+                            <button class="clear-btn-small" id="clearBtn" onclick="clearResults()">清空</button>
+                        </div>
+                        <button class="copy-all-btn" id="copyAllBtn" onclick="copyAllLinks()">复制全部链接</button>
+                    </div>
+                    <div id="resultsList"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="recordsPage">
+                <div class="page-header">上传记录</div>
+                <div class="card">
+                    <div class="card-title">
+                        <span>历史记录</span>
+                        <button class="refresh-btn" onclick="loadRecords()">🔄 刷新</button>
+                    </div>
+                    <div id="recordsList"></div>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="excelPage">
+                <div class="excel-page">
+                    <div class="excel-header">
+                        <h1>Excel链接填写工具</h1>
+                        <p>上传xlsm文件，匹配SKU，批量填写链接</p>
+                    </div>
+
+                    <div class="excel-grid">
+                        <!-- 左侧：上传、搜索、链接输入 -->
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <!-- 1. 上传Excel文件 -->
+                            <div class="excel-card">
+                                <div class="excel-card-title">
+                                    <span class="icon">⬆️</span>
+                                    <span>1. 上传Excel文件</span>
+                                </div>
+                                <div id="excelUploadSection">
+                                    <div class="excel-upload-area" id="excelUploadArea">
+                                        <div class="excel-upload-icon">📄</div>
+                                        <div style="font-size: 14px; color: #fff; margin-bottom: 4px;">点击或拖拽文件到此处</div>
+                                        <div style="font-size: 12px; color: #64748b;">支持 .xlsm, .xlsx, .xls 格式</div>
+                                    </div>
+                                    <input type="file" id="excelFileInput" accept=".xlsm,.xlsx,.xls" style="display: none;">
+                                </div>
+                                <div id="excelFileInfo" style="display: none; margin-top: 12px;">
+                                    <div class="excel-file-info">
+                                        <span>✅</span>
+                                        <span id="excelFileName"></span>
+                                        <button class="excel-btn-danger" onclick="reuploadExcel()">🔄 重新上传</button>
+                                    </div>
+                                    <div id="excelUploadLog" style="margin-top: 8px; font-size: 12px; color: #64748b;"></div>
+                                </div>
+                            </div>
+
+                            <!-- 2. 搜索匹配SKU -->
+                            <div class="excel-card" style="min-height: 180px;">
+                                <div class="excel-card-title">
+                                    <span class="icon">🔍</span>
+                                    <span>2. 搜索匹配SKU</span>
+                                </div>
+                                <div style="position: relative;">
+                                    <input type="text" id="skuSearchInput" class="excel-input" placeholder="输入SKU关键词搜索..." disabled>
+                                    <div class="excel-suggestions" id="skuSuggestions"></div>
+                                </div>
+                                <div id="skuMatchResult" style="margin-top: 12px;"></div>
+                            </div>
+
+                            <!-- 3. 输入链接 -->
+                            <div class="excel-card">
+                                <div class="excel-card-title">
+                                    <span class="icon">🔗</span>
+                                    <span id="linksSectionTitle">3. 输入链接（从Main Image URL列开始写入）</span>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;" id="linksTags">
+                                    <span class="excel-link-tag">Main Image URL列 第1个链接</span>
+                                    <span class="excel-link-tag">Main Image URL后面列 第2个链接</span>
+                                    <span class="excel-link-tag">其他列 第3个链接</span>
+                                    <span class="excel-link-tag">其他列 第4个链接</span>
+                                    <span class="excel-link-tag">...</span>
+                                </div>
+                                <textarea id="linksInput" class="excel-textarea" placeholder="每行输入一个链接..." disabled></textarea>
+                                <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                    <span id="linksCount" style="font-size: 12px; color: #64748b;">已输入 0 个链接</span>
+                                    <button class="excel-btn-primary" id="writeLinksBtn" onclick="writeLinks()" disabled>
+                                        ✏️ 写入链接
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：数据预览、导出文件 -->
+                        <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+                            <!-- 数据预览 -->
+                            <div class="excel-card">
+                                <div class="excel-card-title">
+                                    <span class="icon">📋</span>
+                                    <span>数据预览</span>
+                                </div>
+                                <div id="excelPreview" class="excel-preview-container">
+                                    <div class="empty-state" style="color: #64748b; padding: 20px;">请先上传Excel文件</div>
+                                </div>
+                            </div>
+
+                            <!-- 导出文件 -->
+                            <div class="excel-card">
+                                <div class="excel-card-title">
+                                    <span class="icon">📥</span>
+                                    <span>导出文件</span>
+                                </div>
+                                <button class="excel-btn-success" id="exportBtn" onclick="exportExcel()" disabled>
+                                    ⬇️ 下载处理后的Excel文件
+                                </button>
+                                <div style="margin-top: 12px;">
+                                    <div class="excel-card-title" style="font-size: 14px; margin-bottom: 8px;">
+                                        <span class="icon">📋</span>
+                                        <span>操作记录</span>
+                                    </div>
+                                    <div class="excel-log" id="operationLog">
+                                        <div class="excel-log-item">
+                                            <span class="excel-log-time">等待操作...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let selectedFiles = [];
+        let uploadedResults = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultsCard = document.getElementById('resultsCard');
+        const resultsList = document.getElementById('resultsList');
+
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            addFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+            fileInput.value = '';
+        });
+
+        function addFiles(files) {
+            files.forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            });
+            renderFileList();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFileList();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function renderFileList() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            submitBtn.disabled = false;
+            let html = '';
+            selectedFiles.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                html += `
+                    <div class="file-item">
+                        <img src="${url}" class="file-thumbnail" alt="${file.name}">
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                        <button class="file-remove" onclick="removeFile(${index})">✕ 删除</button>
+                    </div>
+                `;
+            });
+            fileList.innerHTML = html;
+        }
+
+        async function uploadImages() {
+            if (selectedFiles.length === 0) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span>上传中...';
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                renderResults(result.data);
+            } catch (error) {
+                showToast('上传失败：' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '开始上传';
+            }
+        }
+
+        function renderResults(results) {
+            uploadedResults = results;
+            resultsCard.style.display = 'block';
+            let html = '';
+            const successResults = results.filter(r => r.success);
+
+            document.getElementById('copyAllBtn').style.display = successResults.length > 0 ? 'block' : 'none';
+
+            results.forEach((result, index) => {
+                const file = selectedFiles.find(f => f.name === result.filename);
+                const thumbUrl = file ? URL.createObjectURL(file) : '';
+
+                if (result.success) {
+                    html += `
+                        <div class="result-item">
+                            <img src="${result.url}" class="result-image" alt="${result.filename}" onerror="this.src='${thumbUrl}'">
+                            <div class="result-info">
+                                <div class="result-filename">${result.filename}</div>
+                                <div class="result-url">
+                                    <input type="text" value="${result.url}" readonly class="url-input" data-index="${index}">
+                                    <button class="copy-btn" data-index="${index}">复制</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="result-item">
+                            <img src="${thumbUrl}" class="result-image" alt="${result.filename}">
+                            <div class="result-info">
+                                <div class="result-filename">${result.filename}</div>
+                                <div class="result-error">❌ 上传失败：${result.error}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            resultsList.innerHTML = html;
+            bindCopyEvents();
+        }
+
+        function bindCopyEvents() {
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const result = uploadedResults[index];
+                    if (result && result.success && result.url) {
+                        copyLink(result.url, this);
+                    }
+                });
+            });
+        }
+
+        function copyText(text) {
+            return new Promise((resolve, reject) => {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(resolve).catch(reject);
+                } else {
+                    reject(new Error('Clipboard API 不可用'));
+                }
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    const success = document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    if (success) {
+                        return Promise.resolve();
+                    } else {
+                        return Promise.reject(new Error('execCommand 复制失败'));
+                    }
+                } catch (e) {
+                    document.body.removeChild(textarea);
+                    return Promise.reject(e);
+                }
+            });
+        }
+
+        function copyLink(url, btn) {
+            copyText(url).then(() => {
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                showToast('链接已复制到剪贴板');
+                setTimeout(() => {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                showToast('复制失败，请手动复制');
+            });
+        }
+
+        function clearResults() {
+            resultsList.innerHTML = '';
+            resultsCard.style.display = 'none';
+            uploadedResults = [];
+        }
+
+        function copyAllLinks() {
+            const urls = uploadedResults
+                .filter(r => r.success && r.url)
+                .map(r => r.url)
+                .join('\n');
+            if (!urls) {
+                showToast('没有可复制的链接');
+                return;
+            }
+            copyText(urls).then(() => {
+                showToast('全部链接已复制到剪贴板');
+            }).catch(() => {
+                showToast('复制失败，请手动复制');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function switchPage(pageName) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.currentTarget.classList.add('active');
+            document.getElementById(pageName + 'Page').classList.add('active');
+
+            if (pageName === 'records') {
+                loadRecords();
+            }
+            if (pageName === 'excel') {
+                loadDingTalkRecords();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            const btn = sidebar.querySelector('.sidebar-toggle');
+            btn.textContent = sidebar.classList.contains('collapsed') ? '»' : '«';
+        }
+
+        async function loadRecords(page = 1) {
+            currentPage = page;
+            const recordsList = document.getElementById('recordsList');
+            recordsList.innerHTML = '<div class="empty-state">加载中...</div>';
+
+            try {
+                const response = await fetch(`/api/records?page=${page}&page_size=10`);
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    const data = result.data;
+                    totalPages = Math.ceil(data.total / data.page_size);
+                    renderRecordsTable(data.records, data.total);
+                    renderPagination(data.page, totalPages, data.total);
+                } else {
+                    recordsList.innerHTML = '<div class="empty-state">加载失败</div>';
+                }
+            } catch (error) {
+                recordsList.innerHTML = '<div class="empty-state">网络错误</div>';
+            }
+        }
+
+        function renderRecordsTable(records, total) {
+            const recordsList = document.getElementById('recordsList');
+
+            if (records.length === 0) {
+                recordsList.innerHTML = '<div class="empty-state">暂无上传记录</div>';
+                return;
+            }
+
+            let html = `
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>文件名</th>
+                            <th>产品图</th>
+                            <th>转链接</th>
+                            <th>状态</th>
+                            <th>上传时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            records.forEach((record, index) => {
+                const rowNum = (currentPage - 1) * 10 + index + 1;
+                const statusClass = record.status === 'success' ? 'success' : 'failed';
+                const statusText = record.status === 'success' ? '成功' : '失败';
+
+                html += `
+                    <tr>
+                        <td>${rowNum}</td>
+                        <td>${record.filename}</td>
+                        <td>
+                            ${record.image_url ? `<img src="${record.image_url}" class="record-thumbnail" alt="${record.filename}">` : '-'}
+                        </td>
+                        <td>
+                            ${record.result_url ? `
+                                <div class="result-url" style="gap: 4px;">
+                                    <input type="text" value="${record.result_url}" readonly style="flex: 1; padding: 4px 8px; font-size: 12px;">
+                                    <button class="copy-btn" style="padding: 4px 10px; font-size: 12px;" onclick="copyRecordLink('${record.result_url}', this)">复制</button>
+                                </div>
+                            ` : '-'}
+                        </td>
+                        <td><span class="record-status ${statusClass}">${statusText}</span></td>
+                        <td>${record.created_at}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteRecord(${record.id})">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            recordsList.innerHTML = html;
+        }
+
+        function copyRecordLink(url, btn) {
+            copyText(url).then(() => {
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                showToast('链接已复制到剪贴板');
+                setTimeout(() => {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                showToast('复制失败，请手动复制');
+            });
+        }
+
+        function renderPagination(page, totalPages, total) {
+            const pagination = document.getElementById('pagination');
+            
+            if (total <= 10) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <div class="pagination-info">共 ${total} 条记录</div>
+                <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="loadRecords(${page - 1})">上一页</button>
+            `;
+
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(totalPages, page + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="loadRecords(${i})">${i}</button>`;
+            }
+
+            html += `<button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="loadRecords(${page + 1})">下一页</button>`;
+
+            pagination.innerHTML = html;
+        }
+
+        async function deleteRecord(recordId) {
+            if (!confirm('确定要删除这条记录吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/records/${recordId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    showToast('删除成功');
+                    loadRecords(currentPage);
+                } else {
+                    showToast(result.msg || '删除失败');
+                }
+            } catch (error) {
+                showToast('删除失败：' + error.message);
+            }
+        }
+
+        // ==================== 钉钉表格功能 ====================
+        async function loadDingTalkRecords() {
+            const dingtalkList = document.getElementById('dingtalkList');
+            dingtalkList.innerHTML = '<div class="empty-state">加载中...</div>';
+
+            try {
+                const response = await fetch('/api/dingtalk/records');
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    renderDingTalkTable(result.data);
+                } else {
+                    dingtalkList.innerHTML = '<div class="empty-state">加载失败：' + (result.msg || '未知错误') + '</div>';
+                }
+            } catch (error) {
+                dingtalkList.innerHTML = '<div class="empty-state">网络错误：' + error.message + '</div>';
+            }
+        }
+
+        function renderDingTalkTable(records) {
+            const dingtalkList = document.getElementById('dingtalkList');
+
+            if (records.length === 0) {
+                dingtalkList.innerHTML = '<div class="empty-state">暂无数据</div>';
+                return;
+            }
+
+            let html = `
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>标题</th>
+                            <th>产品图</th>
+                            <th>转链接</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            records.forEach((record, index) => {
+                const rowNum = index + 1;
+                const hasLink = record.transfer_link && record.transfer_link.length > 0;
+                const statusClass = hasLink ? 'success' : 'failed';
+                const statusText = hasLink ? '已填写' : '未填写';
+
+                html += `
+                    <tr>
+                        <td>${rowNum}</td>
+                        <td>${record.title || '-'}</td>
+                        <td>
+                            ${record.images.length > 0 ? `
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                    ${record.images.map(img => `<img src="${img.url}" class="record-thumbnail" alt="${img.filename}" title="${img.filename}">`).join('')}
+                                </div>
+                            ` : '-'}
+                        </td>
+                        <td>
+                            ${record.transfer_link ? `
+                                <div class="result-url" style="gap: 4px;">
+                                    <input type="text" value="${record.transfer_link}" readonly style="flex: 1; padding: 4px 8px; font-size: 12px;">
+                                    <button class="copy-btn" style="padding: 4px 10px; font-size: 12px;" onclick="copyRecordLink('${record.transfer_link}', this)">复制</button>
+                                </div>
+                            ` : '-'}
+                        </td>
+                        <td><span class="record-status ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button class="submit-btn" style="padding: 4px 10px; font-size: 12px;" onclick="processDingTalkRecord('${record.record_id}', this)" ${!record.has_images ? 'disabled' : ''}>
+                                转链接
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            dingtalkList.innerHTML = html;
+        }
+
+        async function processDingTalkRecord(recordId, btn) {
+            if (!confirm('确定要处理这条记录吗？')) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>处理中';
+
+            try {
+                const response = await fetch(`/api/dingtalk/process/${recordId}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200 && result.data.success) {
+                    showToast('处理成功，链接已写入');
+                    loadDingTalkRecords();
+                } else {
+                    showToast(result.data.msg || '处理失败');
+                    btn.disabled = false;
+                    btn.textContent = '转链接';
+                }
+            } catch (error) {
+                showToast('处理失败：' + error.message);
+                btn.disabled = false;
+                btn.textContent = '转链接';
+            }
+        }
+
+        async function processAllDingTalk() {
+            if (!confirm('确定要批量处理所有记录吗？')) {
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>批量处理中...';
+
+            try {
+                const response = await fetch('/api/dingtalk/process-all', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    const successCount = result.data.filter(r => r.success).length;
+                    showToast(`批量处理完成，成功 ${successCount} 条`);
+                    loadDingTalkRecords();
+                } else {
+                    showToast(result.msg || '批量处理失败');
+                }
+            } catch (error) {
+                showToast('批量处理失败：' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '全部转链接';
+            }
+        }
+
+        // ==================== Excel 链接填写功能 ====================
+        let currentExcelFileId = null;
+        let currentRowIndex = null;
+        let currentStartCol = 'T'; // 默认从T列开始
+
+        const excelUploadArea = document.getElementById('excelUploadArea');
+        const excelFileInput = document.getElementById('excelFileInput');
+        const skuSearchInput = document.getElementById('skuSearchInput');
+        const linksInput = document.getElementById('linksInput');
+        const linksCount = document.getElementById('linksCount');
+        const writeLinksBtn = document.getElementById('writeLinksBtn');
+        const exportBtn = document.getElementById('exportBtn');
+
+        excelUploadArea.addEventListener('click', () => {
+            if (!currentExcelFileId) {
+                excelFileInput.click();
+            }
+        });
+
+        excelUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            excelUploadArea.classList.add('dragover');
+        });
+
+        excelUploadArea.addEventListener('dragleave', () => {
+            excelUploadArea.classList.remove('dragover');
+        });
+
+        excelUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            excelUploadArea.classList.remove('dragover');
+            if (!currentExcelFileId) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleExcelUpload(files[0]);
+                }
+            }
+        });
+
+        excelFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleExcelUpload(e.target.files[0]);
+            }
+        });
+
+        async function handleExcelUpload(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/excel/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    showToast(`上传失败：HTTP ${response.status} - ${text.substring(0, 100)}`);
+                    return;
+                }
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    const text = await response.text();
+                    showToast('上传失败：服务器返回无效数据');
+                    console.error('Response text:', text);
+                    return;
+                }
+
+                if (response.ok) {
+                    currentExcelFileId = result.fileId;
+                    document.getElementById('excelFileName').textContent = result.filename;
+                    document.getElementById('excelUploadSection').style.display = 'none';
+                    document.getElementById('excelFileInfo').style.display = 'block';
+                    document.getElementById('excelUploadLog').textContent = `文件上传成功，共 ${result.skuCount} 条SKU数据`;
+                    addOperationLog(`文件上传成功，共 ${result.skuCount} 条SKU数据`);
+
+                    // 更新起始列
+                    if (result.mainImageUrlCol) {
+                        currentStartCol = result.mainImageUrlCol;
+                        updateLinksSectionUI(currentStartCol);
+                    }
+
+                    skuSearchInput.disabled = false;
+                    linksInput.disabled = false;
+                    exportBtn.disabled = false;
+                    writeLinksBtn.disabled = false;
+
+                    loadExcelPreview();
+                } else {
+                    showToast(result.error || '上传失败');
+                }
+            } catch (error) {
+                showToast('上传失败：' + error.message);
+            }
+        }
+
+        // 获取Excel下一列的列名（支持双字母如AA、AB等）
+        function getNextColumn(col) {
+            let result = col.split('');
+            let i = result.length - 1;
+            while (i >= 0) {
+                if (result[i] === 'Z') {
+                    result[i] = 'A';
+                    i--;
+                } else {
+                    result[i] = String.fromCharCode(result[i].charCodeAt(0) + 1);
+                    return result.join('');
+                }
+            }
+            return 'A' + result.join('');
+        }
+
+        function updateLinksSectionUI(startCol) {
+            const title = document.getElementById('linksSectionTitle');
+            const tags = document.getElementById('linksTags');
+
+            // 更新标题
+            title.textContent = `3. 输入链接（从${startCol}列开始写入）`;
+
+            // 更新标签
+            const cols = [startCol];
+            for (let i = 0; i < 4; i++) {
+                cols.push(getNextColumn(cols[cols.length - 1]));
+            }
+
+            tags.innerHTML = `
+                <span class="excel-link-tag">${cols[0]}列 第1个链接</span>
+                <span class="excel-link-tag">${cols[1]}列 第2个链接</span>
+                <span class="excel-link-tag">${cols[2]}列 第3个链接</span>
+                <span class="excel-link-tag">${cols[3]}列 第4个链接</span>
+                <span class="excel-link-tag">...</span>
+            `;
+        }
+
+        function reuploadExcel() {
+            currentExcelFileId = null;
+            currentRowIndex = null;
+            currentStartCol = 'T';
+            skuSearchInput.value = '';
+            linksInput.value = '';
+            linksCount.textContent = '已输入 0 个链接';
+            document.getElementById('skuSuggestions').innerHTML = '';
+            document.getElementById('skuMatchResult').innerHTML = '';
+            document.getElementById('excelUploadSection').style.display = 'block';
+            document.getElementById('excelFileInfo').style.display = 'none';
+            document.getElementById('excelPreview').innerHTML = '<div class="empty-state" style="color: #64748b; padding: 20px;">请先上传Excel文件</div>';
+            excelFileInput.value = '';
+            skuSearchInput.disabled = true;
+            linksInput.disabled = true;
+            writeLinksBtn.disabled = true;
+            exportBtn.disabled = true;
+
+            // 重置链接区域UI
+            document.getElementById('linksSectionTitle').textContent = '3. 输入链接（从T列开始写入）';
+            document.getElementById('linksTags').innerHTML = `
+                <span class="excel-link-tag">T列 第1个链接</span>
+                <span class="excel-link-tag">U列 第2个链接</span>
+                <span class="excel-link-tag">V列 第3个链接</span>
+                <span class="excel-link-tag">W列 第4个链接</span>
+                <span class="excel-link-tag">...</span>
+            `;
+        }
+
+        let searchTimeout;
+        skuSearchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+
+            if (!query) {
+                document.getElementById('skuSuggestions').classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => searchSku(query), 300);
+        });
+
+        async function searchSku(query) {
+            if (!currentExcelFileId) return;
+
+            try {
+                const response = await fetch(`/api/excel/sku/search?fileId=${currentExcelFileId}&query=${encodeURIComponent(query)}`);
+                const result = await response.json();
+
+                const suggestions = document.getElementById('skuSuggestions');
+                if (result.matches.length > 0) {
+                    suggestions.innerHTML = result.matches.map(match => `
+                        <div class="excel-suggestion-item" data-row-index="${match.rowIndex}">
+                            <span>${match.value}</span>
+                            <span style="color: #64748b; font-size: 11px;">第 ${match.rowIndex + 1} 行</span>
+                        </div>
+                    `).join('');
+                    suggestions.classList.add('show');
+
+                    suggestions.querySelectorAll('.excel-suggestion-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            selectRow(item.dataset.rowIndex);
+                            suggestions.classList.remove('show');
+                        });
+                    });
+                } else {
+                    suggestions.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('搜索失败:', error);
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#skuSearchInput') && !e.target.closest('#skuSuggestions')) {
+                document.getElementById('skuSuggestions').classList.remove('show');
+            }
+        });
+
+        async function selectRow(rowIndex) {
+            if (!currentExcelFileId) return;
+
+            try {
+                const response = await fetch('/api/excel/row/select', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId: currentExcelFileId, rowIndex: parseInt(rowIndex) })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentRowIndex = result.rowIndex;
+                    skuSearchInput.value = result.skuValue;
+                    document.getElementById('skuSuggestions').classList.remove('show');
+
+                    document.getElementById('skuMatchResult').innerHTML = `
+                        <div class="excel-match-highlight">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="color: #4ade80; font-size: 13px;">✓ 匹配成功</span>
+                                <span style="color: #94a3b8; font-size: 12px;">第 ${result.rowNum} 行</span>
+                            </div>
+                            <div style="font-size: 13px; color: #cbd5e1;">A列值: ${result.skuValue}</div>
+                        </div>
+                    `;
+
+                    addOperationLog(`匹配成功：SKU "${result.skuValue}"（第${result.rowNum}行）`);
+                    loadExcelPreview(rowIndex);
+                } else {
+                    showToast(result.error || '选择失败');
+                }
+            } catch (error) {
+                showToast('选择失败：' + error.message);
+            }
+        }
+
+        linksInput.addEventListener('input', () => {
+            const links = linksInput.value.split('\n').filter(l => l.trim());
+            linksCount.textContent = `已输入 ${links.length} 个链接`;
+        });
+
+        async function writeLinks() {
+            if (!currentExcelFileId || currentRowIndex === null) {
+                showToast('请先选择行');
+                return;
+            }
+
+            const links = linksInput.value.split('\n').filter(l => l.trim());
+            if (links.length === 0) {
+                showToast('请输入链接');
+                return;
+            }
+
+            writeLinksBtn.disabled = true;
+            writeLinksBtn.innerHTML = '<span class="loading"></span>写入中';
+
+            try {
+                const response = await fetch('/api/excel/links/write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileId: currentExcelFileId,
+                        rowIndex: currentRowIndex,
+                        links: links,
+                        startCol: currentStartCol
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(`成功写入 ${result.writtenCount} 个链接`);
+                    addOperationLog(`成功写入 ${result.writtenCount} 个链接到第 ${currentRowIndex + 1} 行（${currentStartCol}列开始）`);
+                    loadExcelPreview(currentRowIndex);
+                } else {
+                    showToast(result.error || '写入失败');
+                }
+            } catch (error) {
+                showToast('写入失败：' + error.message);
+            } finally {
+                writeLinksBtn.disabled = false;
+                writeLinksBtn.innerHTML = '✏️ 写入链接';
+            }
+        }
+
+        async function loadExcelPreview(rowIndex = 0) {
+            if (!currentExcelFileId) return;
+
+            try {
+                const response = await fetch(`/api/excel/preview?fileId=${currentExcelFileId}&rowIndex=${rowIndex}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    renderExcelPreview(result);
+                }
+            } catch (error) {
+                console.error('加载预览失败:', error);
+            }
+        }
+
+        function renderExcelPreview(data) {
+            const preview = document.getElementById('excelPreview');
+
+            let html = '<table class="excel-preview-table">';
+
+            html += '<thead><tr>';
+            html += '<th class="row-number">#</th>';
+            data.headers.forEach(h => {
+                html += `<th class="col-letter" title="${h.header || h.col}">${h.col}</th>`;
+            });
+            html += '</tr></thead>';
+
+            html += '<tbody>';
+            data.rows.forEach(row => {
+                const rowClass = row.isMatched ? 'matched' : '';
+                html += `<tr class="${rowClass}">`;
+                html += `<td class="row-number">${row.rowNum}</td>`;
+                row.cells.forEach(cell => {
+                    const cellClass = cell.modified ? 'modified' : '';
+                    const displayValue = cell.value && cell.value !== 'None' ? cell.value : '';
+                    html += `<td class="${cellClass}" title="${cell.col}列: ${displayValue}">${displayValue}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+
+            preview.innerHTML = html;
+        }
+
+        function addOperationLog(message) {
+            const log = document.getElementById('operationLog');
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0];
+
+            const item = document.createElement('div');
+            item.className = 'excel-log-item success';
+            item.innerHTML = `<span class="excel-log-time">${time}</span>${message}`;
+
+            if (log.children.length > 50) {
+                log.removeChild(log.firstChild);
+            }
+
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function exportExcel() {
+            if (!currentExcelFileId) {
+                showToast('请先上传文件');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/excel/export?fileId=${currentExcelFileId}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || 'export.xlsm';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('文件下载成功');
+                } else {
+                    const result = await response.json();
+                    showToast(result.error || '导出失败');
+                }
+            } catch (error) {
+                showToast('导出失败：' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
